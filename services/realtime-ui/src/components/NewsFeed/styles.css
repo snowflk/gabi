@@ -1,0 +1,30 @@
+ul {
+    list-style-type: none;
+    padding-inline-start: 0;
+    margin-block-start: 0;
+}
+
+.title-wrapper {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    height: 36px;
+    padding: 0 8px;
+    cursor: default;
+}
+
+.title {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 28px;
+    white-space: nowrap;
+    padding: 0 8px;
+    height: auto;
+    color: #131722;
+}
+
+.feed-list {
+    height: calc(100vh - 36px);
+    overflow-y: scroll;
+    contain: strict;
+}

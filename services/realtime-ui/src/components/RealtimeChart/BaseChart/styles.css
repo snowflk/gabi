@@ -1,0 +1,12 @@
+.chart-wrapper {
+    flex: 1;
+    height: calc(100% - 36px);
+}
+.chart-header {
+    height: 30px;
+    background: #253248;
+    color: rgba(255, 255, 255, 0.9);
+}
+.chart-container {
+    height: calc(100% - 30px)
+}

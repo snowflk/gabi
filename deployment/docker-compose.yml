@@ -1,0 +1,173 @@
+version: '2'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    restart: on-failure
+    networks:
+      - gabi
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka
+    restart: on-failure
+    networks:
+      - gabi
+    ports:
+      - "9092:9092"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: "kafka"
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_PORT: 9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_BROKER_ID: 1
+      KAFKA_CREATE_TOPICS: "dad.price.0:1:1,\
+          dad.candle.0:1:1,\
+          dad.market_factor.0:1:1,\
+          dad.news.0:1:1,\
+          dad.tweet.0:1:1, \
+          dad.livecandle.0:1:1, \
+          dad.predictioncandle.0:1:1"
+    depends_on:
+      - zookeeper
+
+  sparkmaster:
+    build:
+      context: ./spark
+    networks:
+      - gabi
+    hostname: sparkmaster
+    environment:
+      SPARK_HOME: /spark
+      MASTER: spark://sparkmaster:7077
+      SPARK_CONF_DIR: /spark/conf
+      SPARK_PUBLIC_DNS: localhost
+    volumes:
+      - ../services/sparkjobs/build/libs/sparkjobs-1.0-SNAPSHOT-all.jar:/app/price.jar
+    ports:
+      - 8080:8080
+      - 7077:7077
+      - 6066:6066
+    command: /spark/bin/spark-class org.apache.spark.deploy.master.Master -h sparkmaster
+
+  sparkworker:
+    build:
+      context: ./spark
+    networks:
+      - gabi
+    hostname: sparkworker
+    environment:
+      SPARK_HOME: /spark
+      SPARK_CONF_DIR: /spark/conf
+      SPARK_WORKER_CORES: 4
+      SPARK_WORKER_MEMORY: 2g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 8081
+      SPARK_PUBLIC_DNS: localhost
+    volumes:
+      - ../services/sparkjobs/build/libs/sparkjobs-1.0-SNAPSHOT-all.jar:/app/price.jar
+    ports:
+      - 8081:8081
+    command: /spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://sparkmaster:7077
+
+  mongo:
+    image: mongo
+    restart: always
+    networks:
+      - gabi
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    ports:
+      - 27017:27017
+
+  price-factors-crawler:
+    build:
+      context: ../services/price-factors-crawler
+    networks:
+      - gabi
+    volumes:
+      - ../services/price-factors-crawler:/app
+      - /app/node_modules
+    environment:
+      - "FXCM_TOKEN=0004ac72171d396154ddaebc87487cf326cfdd1e"
+      - "KAFKA_SERVER=kafka:9092"
+      - "KAFKA_TOPIC=dad.price.0"
+    ports:
+      - 2999:3000
+
+  realtime-api:
+    build:
+      context: ../services/realtime-api
+    networks:
+      - gabi
+    volumes:
+      - ../services/realtime-api:/app
+      - /app/node_modules
+    environment:
+      - "FXCM_TOKEN=0004ac72171d396154ddaebc87487cf326cfdd1e"
+      - "PORT=3000"
+      - "KAFKA_SERVER=kafka:9092"
+      - "KAFKA_PRICETOPIC=dad.price.0"
+      - "KAFKA_CANDLETOPIC=dad.candle.0"
+    ports:
+      - 3000:3000
+
+  tweet-crawler:
+    build:
+      context: ../services/tweet-crawler
+    networks:
+      - gabi
+    restart: on-failure
+    volumes:
+      - ../services/tweet-crawler:/app
+    environment:
+      - "TOPIC=dad.tweet.0"
+      - DEBUG=y
+      - "KAFKA=kafka:9092"
+
+  news-crawler:
+    build:
+      context: ../services/news-crawler
+    networks:
+      - gabi
+    restart: on-failure
+    volumes:
+      - ../services/news-crawler:/app
+    environment:
+      - "TOPIC=dad.news.0"
+      - SCHEDULE=10
+      - PAGES=5
+      - "KAFKA=kafka:9092"
+
+#  flask-ml:
+#    build:
+#      context: ../services/flask-ml
+#    container_name: flask-ml
+#    networks:
+#      - gabi
+#    restart: on-failure
+#    volumes:
+#      - ../services/flask-ml:/app
+#    ports:
+#      - 5000:5000
+
+  viewer:
+    build:
+      context: ../services/view
+    networks:
+      - gabi
+    restart: on-failure
+    volumes:
+      - ../services/view:/app
+    environment:
+      - "TOPIC=dad.tweet.0"
+      - "KAFKA=kafka:9092"
+      - "ELASTICSEARCH=http://elasticsearch:9200"
+
+networks:
+  gabi:
+    driver: bridge

@@ -1,0 +1,12 @@
+.messages-panel-wrapper {
+   margin: 10px;
+}
+
+.messages-header {
+    font-size: 19px;
+    font-weight: 600;
+}
+
+.messages-list {
+    margin-top: 10px;
+}

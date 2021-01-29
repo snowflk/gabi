@@ -1,0 +1,59 @@
+.react-dropdown-select-input {
+    display: none;
+}
+
+.item {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    white-space: nowrap;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #fff;
+    cursor: default;
+    transition-property: none;
+    color: #131722;
+}
+
+.selected-item-label {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    white-space: nowrap;
+    font-size: 16px;
+    cursor: default;
+    transition-property: none;
+    color: #131722;
+}
+
+.item:not(.item-selected):hover {
+    background: rgba(0, 116, 217, 0.1);
+    outline: none;
+}
+
+.item-selected {
+    background: #0074D9;
+    color: #fff;
+    border-bottom: 1px solid #fff;
+}
+
+.labelRow {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    flex: 0 1 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-right: 12px;
+}
+
+.chart-icon {
+    display: flex;
+    margin-right: 10px;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+}
