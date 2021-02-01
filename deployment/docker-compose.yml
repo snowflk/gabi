@@ -45,8 +45,7 @@ services:
       MASTER: spark://sparkmaster:7077
       SPARK_CONF_DIR: /spark/conf
       SPARK_PUBLIC_DNS: localhost
-    volumes:
-      - ../services/sparkjobs/build/libs/sparkjobs-1.0-SNAPSHOT-all.jar:/app/price.jar
+
     ports:
       - 8080:8080
       - 7077:7077
@@ -116,19 +115,6 @@ services:
     ports:
       - 3000:3000
 
-  tweet-crawler:
-    build:
-      context: ../services/tweet-crawler
-    networks:
-      - gabi
-    restart: on-failure
-    volumes:
-      - ../services/tweet-crawler:/app
-    environment:
-      - "TOPIC=dad.tweet.0"
-      - DEBUG=y
-      - "KAFKA=kafka:9092"
-
   news-crawler:
     build:
       context: ../services/news-crawler
@@ -155,18 +141,6 @@ services:
 #    ports:
 #      - 5000:5000
 
-  viewer:
-    build:
-      context: ../services/view
-    networks:
-      - gabi
-    restart: on-failure
-    volumes:
-      - ../services/view:/app
-    environment:
-      - "TOPIC=dad.tweet.0"
-      - "KAFKA=kafka:9092"
-      - "ELASTICSEARCH=http://elasticsearch:9200"
 
 networks:
   gabi:
