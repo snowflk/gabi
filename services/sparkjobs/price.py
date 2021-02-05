@@ -1,6 +1,5 @@
 mround = round
 import os
-import cloudpickle
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
@@ -12,7 +11,6 @@ from keras.models import load_model
 from pyspark import SparkFiles
 import pyspark.serializers
 
-pyspark.serializers.cloudpickle = cloudpickle
 
 SYMBOL = "EURUSD"
 # FRAMES = {
@@ -35,8 +33,8 @@ def sliding_windows(symbol, frame, df, decimal_places=5):
     return df.withWatermark("timestamp", "0 day") \
         .filter((df['frame'] == frame) &
                 (df['symbol'] == symbol) &
-                (df['ts'] > unix_timestamp(current_timestamp()) - 3 * 60 * 60))
-
+                (df['ts'] > unix_timestamp(current_timestamp()) - 3 * 60 * 60)) \
+        .groupBy(window("timestamp", "3 days", "1 minute"), "symbol", "frame")
 
 def df_to_x(df, Np=10):
     Nf = 1  # future ticks
@@ -110,7 +108,6 @@ def predict(symbol, frame, openBids, highBids, lowBids, closeBids, timestamps):
         h = highBids[-61:]
         l = lowBids[-61:]
         c = closeBids[-61:]
-        print('o', len(o), o, flush=True)
         if len(o) < 61:
             return {}
 
@@ -244,13 +241,14 @@ df = spark.readStream.format('kafka') \
 windows = []
 
 df = sliding_windows(SYMBOL, 'm1', df)
+#.groupBy(df['symbol'], df['frame']) \
 
-df = df.groupBy(df['symbol'], df['frame']) \
-    .agg(collect_list(df['openBid']).alias('openBids'),
-         collect_list(df['highBid']).alias('highBids'),
-         collect_list(df['lowBid']).alias('lowBids'),
-         collect_list(df['closeBid']).alias('closeBids'),
-         collect_list(df['ts']).alias('tsx'))
+df = df\
+    .agg(collect_list('openBid').alias('openBids'),
+         collect_list('highBid').alias('highBids'),
+         collect_list('lowBid').alias('lowBids'),
+         collect_list('closeBid').alias('closeBids'),
+         collect_list('ts').alias('tsx'))
 
 df = df.select(
     udf(predict, StringType())(df['symbol'], df['frame'],
